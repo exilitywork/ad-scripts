@@ -1,4 +1,4 @@
-﻿#сама функция транслитерации
+#сама функция транслитерации
 function global:Translit {
 	param([string]$inString)
 	$Translit = @{
@@ -136,7 +136,8 @@ Out-File $BadOutFile -InputObject ("Обработка на дату "+(Get-Date
 
 Out-File $NewAccountFile -InputObject ("--------------------Белвест Офис--------------------") -Append -Encoding "Default"
 
-$csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat, Birthday, EmploymentDate, Familia, Name, Otch, ManagerNum | ForEach-Object{
+$csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat, Birthday, EmploymentDate, Familia, Name, Otch, ManagerNum, HZ2 | ForEach-Object{
+	$level = $_.HZ2
 	$CodeOrg = $_.CodeOrg
 	$FIO = $_.FIO
 	$TubNum = $_.TubNum
@@ -144,10 +145,11 @@ $csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat
 	$birthday = $_.Birthday
 	$currentDate = [Int64](Get-Date (Get-Date -Format dd.MM.yyyy) -UFormat %s)
 	$empDate = [Int64](Get-Date $_.EmploymentDate -UFormat %s)
+	$empType = "Офис"
 	If (($CodeOrg -eq "1000") -and !(($exTubNum -eq "090") -or ($exTubNum -eq "330") -or ($exTubNum -eq "320") -or ($_.Depat -match "магазин")))
 	{
 		Out-File $FullLog -InputObject ("Обработка "+$_.FIO+'...') -Append -Encoding "Default"
-		$user = get-ADUser -Searchbase $BWADPath -Filter {EmployeeID -eq $TubNum} -Properties EmployeeID, Department, Title, Company, Description, fullDeparment, birthDay, comment, manager, distinguishedName
+		$user = get-ADUser -Searchbase $BWADPath -Filter {EmployeeID -eq $TubNum} -Properties EmployeeID, Department, Title, Company, Description, fullDeparment, birthDay, comment, manager, distinguishedName, employeeType
 		#Если пользователь найден
 		If ($null -ne $user ) 
 		{
@@ -248,6 +250,18 @@ $csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat
 					Out-File $FullLog -InputObject ("Руководитель обновлен") -Append -Encoding "Default"
 					Out-File $NewUserFile -InputObject ($FIO+" изменен руководитель") -Append -Encoding "Default"
 				}
+			#Назначение группы и аттрибута Офис
+			if ((($level -eq "v5") -or ($level -eq "v6") -or ($level -eq "v7")) -and ($user.employeeType -ne $empType))
+			{
+				Set-ADUser $user -Replace @{employeeType=$empType}
+            			Out-File $FullLog -InputObject ("Тип работника обновлен") -Append -Encoding "Default"
+            			Out-File $NewUserFile -InputObject ($FIO+" изменен тип работника") -Append -Encoding "Default"
+				Add-ADGroupMember -Identity ("Офис") -Members $user
+			}
+			else
+			{
+				Out-File $FullLog -InputObject ("Тип работника верный") -Append -Encoding "Default"
+			}
 			}
 			# раньше бахалось без проверок
 			# $user | set-ADUser -EmployeeID $_.TubNum -Department $_.Depat -Title $_.Prof -Company $_.Org -Description $_.Prof
@@ -344,6 +358,12 @@ $csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat
 					-OtherAttributes @{'EmployeeID'=$_.TubNum;'birthDay'=$_.BirthDay;'physicalDeliveryOfficeName'=$newPass}
 				$NewUser = Get-ADUser $samAccountName
 				Set-ADUser $samAccountName -ChangePasswordAtLogon $True
+				#Назначение группы и аттрибута Офис
+				if (($level -eq "v5") -or ($level -eq "v6") -or ($level -eq "v7"))
+				{
+					Set-ADUser $user -Replace @{employeeType=$empType}
+					Add-ADGroupMember -Identity ("Офис") -Members $user
+				}
 				if ($NewUser -eq $null)
 				{
 					Out-File $NewAccountFile -InputObject ("ОШИБКА СОЗДАНИЯ! - "+$_.FIO+", №"+$_.TubNum+", "+$samAccountName) -Append -Encoding "Default"
