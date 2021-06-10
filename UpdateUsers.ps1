@@ -136,7 +136,104 @@ Out-File $BadOutFile -InputObject ("Обработка на дату "+(Get-Date
 
 Out-File $NewAccountFile -InputObject ("--------------------Белвест Офис--------------------") -Append -Encoding "Default"
 
-$csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat, Birthday, EmploymentDate, Familia, Name, Otch, ManagerNum, HZ2 | ForEach-Object{
+# Сопоставление SAP-идентификаторов подразделений  SAP-идентификаторам руководящих должностей
+$managers=@{}
+$top_managers=@{}
+$csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat, Birthday, EmploymentDate, Familia, Name, Otch, ManagerNum, HZ2, IDProfFull, IDDepatFull | ForEach-Object{
+	$CodeOrg = $_.CodeOrg
+	$id_prof = $_.IDProfFull
+	$id_dep = $_.IDDepatFull
+	$TubNum = $_.TubNum
+	If ($CodeOrg -eq "1000")
+	{
+		if ($id_prof -eq 50009336)
+		{
+			$managers['50000317']=$TubNum		# Цех №1 - Начальник цеха №1,5
+			$top_managers['50000457']=$TubNum	# Цех №1 смена А - Начальник цеха №1,5
+			$top_managers['50000459']=$TubNum	# Цех №1 смена Б - Начальник цеха №1,5
+			$top_managers['50000471']=$TubNum	# Цех №5 смена А - Начальник цеха №1,5
+			$top_managers['50000472']=$TubNum	# Цех №5 смена Б - Начальник цеха №1,5
+		}
+		elseif ($id_prof -eq 50037990)
+		{
+			$managers['50000457']=$TubNum		# Цех №1 смена А - Старший мастер смены А цеха №1,5
+		}
+		elseif ($id_prof -eq 50037992)
+		{
+			$managers['50000459']=$TubNum		# Цех №1 смена Б - Старший мастер смены Б цеха №1,5
+		}
+		elseif ($id_prof -eq 50009713)
+		{
+			$managers['50000319']=$TubNum		# Цех №2 - Начальник цеха №2
+			$top_managers['50000461']=$TubNum	# Цех №2 смена А - Начальник цеха №2
+			$top_managers['50032499']=$TubNum	# Цех №2 смена Б - Начальник цеха №2
+			$top_managers['50000473']=$TubNum	# Цех №6 - Начальник цеха №2
+		}
+		elseif ($id_prof -eq 50009694)
+		{
+			$managers['50000461']=$TubNum		# Цех №2 смена А - Старший мастер смены A цеха №2
+		}
+		elseif ($id_prof -eq 50009591)
+		{
+			$managers['50032499']=$TubNum		# Цех №2 смена Б - Старший мастер смены Б цеха №2
+		}
+		elseif ($id_prof -eq 50010333)
+		{
+			$managers['50000321']=$TubNum		# Цех №3 - Начальник цеха №3,4
+			$top_managers['50000464']=$TubNum	# Цех №3 смена А - Начальник цеха №3,4
+			$top_managers['50000463']=$TubNum	# Цех №3 смена Б - Начальник цеха №3,4
+			$top_managers['50000466']=$TubNum	# Цех №4 смена А - Начальник цеха №3,4
+			$top_managers['50000467']=$TubNum	# Цех №4 смена Б - Начальник цеха №3,4
+		}
+		elseif ($id_prof -eq 50000464)
+		{
+			$managers['50000464']=$TubNum		# Цех №3 смена А - Старший мастер смены А цеха №3,4
+		}
+		elseif ($id_prof -eq 50009383)
+		{
+			$managers['50000463']=$TubNum		# Цех №3 смена Б - Старший мастер смены Б цеха №3,4
+		}
+		elseif ($id_prof -eq 50010360)
+		{
+			$managers['50000466']=$TubNum		# Цех №4 смена А - Старший мастер смены А цеха №3,4
+		}
+		elseif ($id_prof -eq 50009383)
+		{
+			$managers['50000467']=$TubNum		# Цех №4 смена Б - Старший мастер смены Б цеха №3,4
+		}
+		elseif ($id_prof -eq 50037990)
+		{
+			$managers['50000471']=$TubNum		# Цех №5 смена А - Старший мастер смены А цеха №1,5
+		}
+		elseif ($id_prof -eq 50037992)
+		{
+			$managers['50000472']=$TubNum		# Цех №5 смена Б - Старший мастер смены Б цеха №1,5
+		}
+		elseif ($id_prof -eq 50046489)
+		{
+			$managers['50000473']=$TubNum		# Цех №6 - Старший мастер производственного участка
+		}
+		elseif ($id_prof -eq 50010291)
+		{
+			$managers['50000456']=$TubNum		# Участок литья - Начальник участка литья
+			$managers['50000478']=$TubNum
+			$managers['50000479']=$TubNum
+			$managers['50001845']=$TubNum
+			$managers['50001846']=$TubNum
+			$managers['50045747']=$TubNum
+			$managers['50045745']=$TubNum		
+		}
+		elseif ($id_prof -eq 50030531)
+		{
+			$managers['50030386']=$TubNum		# Участок подготовки кож - Начальник производственного участка
+			$managers['50000460']=$TubNum
+		}
+	}
+}
+
+$csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat, Birthday, EmploymentDate, Familia, Name, Otch, ManagerNum, HZ2, IDProfFull, IDDepatFull | ForEach-Object{
+	$id_prof = $_.IDProfFull
+	$id_dep = $_.IDDepatFull
 	$level = $_.HZ2
 	$CodeOrg = $_.CodeOrg
 	$FIO = $_.FIO
@@ -238,7 +335,20 @@ $csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat
 			#Руководитель
 			if ($_.ManagerNum -ne '')
 				{
+				$id_prof = $_.IDProfFull
+				$id_dep = $_.IDDepatFull
 				$ManagerNum = $_.ManagerNum
+				if ($TubNum -eq $ManagerNum)
+				{
+					if ($managers[$id_dep] -ne $null)
+					{
+						$ManagerNum = $managers[$id_dep]
+					}
+					elseif ($top_managers[$id_dep] -ne $null)
+					{
+						$ManagerNum = $top_managers[$id_dep]
+					}
+				}
 				$manager = get-ADUser -Searchbase $BWADPath -Filter {EmployeeID -eq $ManagerNum} -Properties distinguishedName
 				if (($user.manager -eq $manager.distinguishedName) -or ($manager.distinguishedName -eq ''))
 				{
@@ -250,17 +360,27 @@ $csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat
 					Out-File $FullLog -InputObject ("Руководитель обновлен") -Append -Encoding "Default"
 					Out-File $NewUserFile -InputObject ($FIO+" изменен руководитель") -Append -Encoding "Default"
 				}
-			#Назначение группы и аттрибута Офис
-			if ((($level -eq "v5") -or ($level -eq "v6") -or ($level -eq "v7")) -and ($user.employeeType -ne $empType))
+			#Назначение группы и аттрибута Офис или Производство
+			if ((($level -eq "v5") -or ($level -eq "v6") -or ($level -eq "v7")) -and ($user.employeeType -ne "Офис"))
 			{
-				Set-ADUser $user -Replace @{employeeType=$empType}
+				Set-ADUser $user -Replace @{employeeType="Офис"}
             			Out-File $FullLog -InputObject ("Тип работника обновлен") -Append -Encoding "Default"
             			Out-File $NewUserFile -InputObject ($FIO+" изменен тип работника") -Append -Encoding "Default"
 				Add-ADGroupMember -Identity ("Офис") -Members $user
 			}
 			else
 			{
-				Out-File $FullLog -InputObject ("Тип работника верный") -Append -Encoding "Default"
+				if ((($level -eq "v1") -or ($level -eq "v2") -or ($level -eq "v3") -or ($level -eq "v4")) -and ($user.employeeType -ne "Рабочие"))
+				{
+					Set-ADUser $user -Replace @{employeeType="Рабочие"}
+	            			Out-File $FullLog -InputObject ("Тип работника обновлен") -Append -Encoding "Default"
+	            			Out-File $NewUserFile -InputObject ($FIO+" изменен тип работника") -Append -Encoding "Default"
+					Add-ADGroupMember -Identity ("Рабочие") -Members $user
+				}
+				else
+				{
+					Out-File $FullLog -InputObject ("Тип работника верный") -Append -Encoding "Default"
+				}
 			}
 			}
 			# раньше бахалось без проверок
@@ -361,8 +481,13 @@ $csv | Select-Object CodeOrg, Org, FIO, ProfFull, DepatFull, Tubnum, Prof, Depat
 				#Назначение группы и аттрибута Офис
 				if (($level -eq "v5") -or ($level -eq "v6") -or ($level -eq "v7"))
 				{
-					Set-ADUser $user -Replace @{employeeType=$empType}
+					Set-ADUser $user -Replace @{employeeType="Офис"}
 					Add-ADGroupMember -Identity ("Офис") -Members $user
+				}
+				else
+				{
+					Set-ADUser $user -Replace @{employeeType="Рабочие"}
+					Add-ADGroupMember -Identity ("Рабочие") -Members $user
 				}
 				if ($NewUser -eq $null)
 				{
